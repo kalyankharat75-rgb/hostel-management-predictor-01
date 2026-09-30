@@ -1,3 +1,6 @@
+import os
+import tempfile
+os.environ['MPLCONFIGDIR'] = os.environ.get('MPLCONFIGDIR', tempfile.gettempdir())
 import io
 import base64
 import sqlite3

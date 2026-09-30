@@ -1,4 +1,6 @@
 import os
+import tempfile
+os.environ['MPLCONFIGDIR'] = os.environ.get('MPLCONFIGDIR', tempfile.gettempdir())
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
@@ -15,9 +17,12 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'hostel_predictor_secret_key_2026_super_secure')
 
 # Ensure DB & static directories are ready
-init_db()
-seed_db()
-generate_charts()
+try:
+    init_db()
+    seed_db()
+    generate_charts()
+except Exception as e:
+    print(f"[STARTUP WARNING] Initialization notice: {e}")
 
 def login_required(f):
     @wraps(f)
@@ -368,8 +373,8 @@ def admin_dashboard():
 
         complaints.append(item)
 
-    # Sort by impact_score descending as DEFAULT VIEW
-    complaints.sort(key=lambda x: (x['status'] == 'Resolved', -x['impact_score'], x['date_filed']))
+    # Sort by impact_score descending as DEFAULT VIEW (safe against None values)
+    complaints.sort(key=lambda x: (x.get('status') == 'Resolved', -(x.get('impact_score') or 0), str(x.get('date_filed') or '')))
 
     # Metadata for filter dropdowns
     cursor.execute("SELECT DISTINCT floor FROM assets ORDER BY floor ASC")
@@ -402,7 +407,11 @@ def admin_dashboard():
     conn.close()
 
     # Feature 9: Generate or ensure charts exist in static/charts/
-    charts = generate_charts()
+    try:
+        charts = generate_charts()
+    except Exception as e:
+        print(f"[CHART WARNING] {e}")
+        charts = {'floor_bar': 'charts/floor_bar.png', 'asset_pie': 'charts/asset_pie.png'}
 
     return render_template(
         'admin_dashboard.html',
@@ -558,7 +567,7 @@ def asset_history(asset_id):
     recent_complaints_6m = 0
     for r in raw_history:
         item = dict(r)
-        if item['date_filed'] >= six_months_ago:
+        if (item.get('date_filed') or '') >= six_months_ago:
             recent_complaints_6m += 1
         
         if item['is_anonymous']:
@@ -658,6 +667,27 @@ def reset_demo_data():
     flash('✓ Database successfully restored to pristine Seminar Demo State (Room 204 trend & Fan-1 replacement ready)!', 'success')
     return redirect(request.referrer or url_for('presentation'))
 
+# ----------------- ERROR HANDLERS ----------------- #
+
+@app.errorhandler(500)
+def handle_500_error(e):
+    import traceback
+    error_trace = traceback.format_exc()
+    print("[ERROR 500 TRACEBACK]:\n", error_trace)
+    return render_template('error.html', error_message=str(e)), 500
+
+@app.errorhandler(Exception)
+def handle_general_exception(e):
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException):
+        return e
+    import traceback
+    error_trace = traceback.format_exc()
+    print("[UNCAUGHT EXCEPTION TRACEBACK]:\n", error_trace)
+    return render_template('error.html', error_message=str(e)), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    debug_mode = os.environ.get('FLASK_DEBUG', 'True').lower() in ('true', '1', 't')
+    print(f"🚀 Starting Hostel Maintenance Predictor on port {port} (Debug: {debug_mode})")
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)

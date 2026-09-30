@@ -1,4 +1,7 @@
 import os
+import tempfile
+# Ensure Matplotlib has write permissions on cloud environments like Render
+os.environ['MPLCONFIGDIR'] = os.environ.get('MPLCONFIGDIR', tempfile.gettempdir())
 import sqlite3
 import pandas as pd
 import numpy as np
@@ -195,9 +198,15 @@ def get_trend_predictions():
 
         trend_sequence_str = " → ".join(str(c) for c in counts)
 
+        floor_num = 1
+        for ch in str(r):
+            if ch.isdigit():
+                floor_num = int(ch)
+                break
+
         room_predictions.append({
             'room_no': r,
-            'floor': int(str(r)[0]),
+            'floor': floor_num,
             'history': counts,
             'history_str': trend_sequence_str,
             'moving_avg': avg_3m,

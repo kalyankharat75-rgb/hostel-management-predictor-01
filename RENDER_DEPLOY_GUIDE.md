@@ -30,7 +30,7 @@ Aapka project **Render.com** par deploy hone ke liye **100% ready** kar diya gay
    - **Branch:** `main` (ya `master`)
    - **Runtime:** `Python 3`
    - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `gunicorn app:app`
+   - **Start Command:** `gunicorn --bind 0.0.0.0:$PORT --timeout 120 app:app`
    - **Instance Type:** `Free`
 5. Neeche **"Deploy Web Service"** button par click karein!
 
