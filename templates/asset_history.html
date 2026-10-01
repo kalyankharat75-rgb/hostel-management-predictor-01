@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Asset History: {{ asset.asset_code }} - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+  <a href="{{ url_for('admin_dashboard') }}" style="color: var(--text-muted); font-size: 0.9rem;">&larr; Back to Admin Dashboard</a>
+</div>
+
+<!-- Asset Profile Header Card -->
+<div class="panel-card" style="margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #1e293b;">
+          {{ asset.asset_code }} ({{ asset.asset_type }})
+        </h1>
+        {% if needs_replacement %}
+          <span class="badge-replacement">
+            🚨 Needs Replacement
+          </span>
+        {% else %}
+          <span class="status-badge status-resolved">
+            ✓ Normal Maintenance
+          </span>
+        {% endif %}
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Installed in <strong>Room {{ asset.room_no }}</strong> &bull; Floor {{ asset.floor }} &bull; Asset ID: #{{ asset.id }}
+      </p>
+    </div>
+
+    <div style="text-align: right;">
+      <div style="font-size: 2.2rem; font-weight: 800; color: {% if needs_replacement %}#b91c1c{% else %}#1e293b{% endif %};">
+        {{ recent_complaints_6m }}
+      </div>
+      <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">
+        Complaints in Last 6 Months
+      </div>
+      <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
+        {{ total_complaints }} lifetime tickets
+      </div>
+    </div>
+  </div>
+
+  <!-- Replacement Flag Banner (Feature 3) -->
+  {% if needs_replacement %}
+  <div style="margin-top: 1.25rem; padding: 1.25rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md);">
+    <div style="display: flex; gap: 0.75rem;">
+      <span style="font-size: 1.4rem;">⚠️</span>
+      <div>
+        <h3 style="color: #991b1b; font-size: 1.05rem; font-weight: 700; margin-bottom: 0.25rem;">
+          Asset Replacement Recommendation
+        </h3>
+        <p style="color: #7f1d1d; font-size: 0.9rem;">
+          <strong>{{ asset.asset_code }} in Room {{ asset.room_no }} has had {{ recent_complaints_6m }} complaints in the last 6 months.</strong>
+          Per hostel facility protocol, assets that suffer 3 or more recurring breakdowns within 6 months are flagged as <strong>"Needs Replacement"</strong> instead of continuing repeated patchwork repair.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Incident History Table -->
+<div class="panel-card">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Complete Complaint History for {{ asset.asset_code }}</h2>
+      <p class="section-desc">Audit log of all reported issues and technician remarks for this asset</p>
+    </div>
+  </div>
+
+  {% if history %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ticket #</th>
+            <th>Date Reported</th>
+            <th>Issue Type</th>
+            <th>Problem Description</th>
+            <th>Reported By</th>
+            <th>Status</th>
+            <th>Impact</th>
+            <th>Resolution Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in history %}
+          <tr>
+            <td><strong>#{{ c.id }}</strong></td>
+            <td style="font-size: 0.85rem; color: var(--text-muted);">{{ c.date_filed }}</td>
+            <td><span class="badge-normal" style="font-weight: 600;">{{ c.issue_type }}</span></td>
+            <td style="max-width: 250px;">
+              <span style="font-size: 0.88rem;">{{ c.description }}</span>
+            </td>
+            <td>
+              <span style="font-size: 0.82rem; color: #475569;">{{ c.display_reporter }}</span>
+            </td>
+            <td>
+              {% if c.status == 'Pending' %}
+                <span class="status-badge status-pending">Pending</span>
+              {% elif c.status == 'In Progress' %}
+                <span class="status-badge status-inprogress">In Progress</span>
+              {% else %}
+                <span class="status-badge status-resolved">Resolved</span>
+              {% endif %}
+            </td>
+            <td>👥 {{ c.affected_students_count }}</td>
+            <td>
+              {% if c.status == 'Resolved' %}
+                <div style="font-size: 0.82rem;">
+                  <strong style="color: #047857;">Resolved on {{ c.resolved_date }}</strong><br>
+                  <em>By {{ c.resolved_by }}</em>: "{{ c.remarks }}"
+                </div>
+              {% else %}
+                <span style="font-size: 0.82rem; color: var(--text-muted);">Pending repair</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p style="text-align: center; color: var(--text-muted); padding: 2rem;">No complaints recorded for this asset.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Trend-Based Predictions - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">Trend-Based Failure Prediction</h1>
+    <p class="section-desc">Calculated via Pandas grouping & 3-month moving average with next-month projection</p>
+  </div>
+  <div>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<!-- Methodology Explanation Card -->
+<div class="panel-card" style="background: #f8fafc; border-left: 4px solid var(--primary); padding: 1.25rem; margin-bottom: 1.5rem;">
+  <h3 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">
+    📊 Prediction Methodology
+  </h3>
+  <p style="font-size: 0.9rem; color: #475569;">
+    Complaints are grouped by room and floor across calendar months. The system calculates a <strong>simple moving average (SMA)</strong> over the last 3 recorded months ({{ period_labels|join(', ') }}) and identifies accelerating failure trends to project expected maintenance ticket volume for next month.
+  </p>
+</div>
+
+<!-- Highlighted Accelerated Surge Card (e.g. Room 204) -->
+{% set top_surge = room_predictions[0] if room_predictions else None %}
+{% if top_surge and top_surge.moving_avg >= 2 %}
+<div class="panel-card" style="border: 2px solid #ef4444; background: #fef2f2; margin-bottom: 1.75rem;">
+  <div style="display: flex; gap: 1rem; align-items: flex-start;">
+    <span style="font-size: 2rem;">🚨</span>
+    <div>
+      <span class="badge-replacement" style="margin-bottom: 0.5rem;">Critical Wear Surge Detected</span>
+      <h2 style="font-size: 1.35rem; font-weight: 800; color: #991b1b; margin-top: 0.25rem;">
+        Room {{ top_surge.room_no }}: {{ top_surge.history_str }} complaints trend &rarr; Projected {{ top_surge.projected_next_month }} next month
+      </h2>
+      <p style="font-size: 0.92rem; color: #7f1d1d; margin-top: 0.35rem;">
+        Room {{ top_surge.room_no }} on Floor {{ top_surge.floor }} has experienced repeated escalating failures over the last 3 months with a 3-month average of <strong>{{ top_surge.moving_avg }} complaints/month</strong>. Pre-emptive inspection is recommended immediately.
+      </p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Room Trend Predictions Table -->
+<div class="panel-card">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Room-Level 3-Month Moving Average & Projections</h2>
+      <p class="section-desc">Historical trajectory across months and forecasted failure volume for upcoming month</p>
+    </div>
+  </div>
+
+  <!-- Interactive Controls: Live Room Search & Risk Level Filter Chips -->
+  <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+    <div style="flex: 1; min-width: 260px; position: relative;">
+      <input type="text" id="predSearchInput" class="form-control" placeholder="⚡ Live Filter: Type room number (e.g. 204)..." style="padding-left: 2.4rem; border-radius: var(--radius-full); box-shadow: var(--shadow-sm);">
+      <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--text-muted);">🔍</span>
+    </div>
+
+    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+      <button type="button" class="btn btn-secondary btn-sm pred-filter-chip active" onclick="filterPredByRisk('all', this)" style="border-radius: var(--radius-full);">
+        All Rooms
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm pred-filter-chip" onclick="filterPredByRisk('Rapid Increase', this)" style="border-radius: var(--radius-full); color: #be123c;">
+        🚨 Rapid Increase
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm pred-filter-chip" onclick="filterPredByRisk('Moderate', this)" style="border-radius: var(--radius-full); color: #b45309;">
+        ⚠️ Moderate
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm pred-filter-chip" onclick="filterPredByRisk('Stable', this)" style="border-radius: var(--radius-full); color: #047857;">
+        ✓ Stable
+      </button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table pred-table">
+      <thead>
+        <tr>
+          <th>Room</th>
+          <th>Floor</th>
+          <th>3-Month Breakdown History ({{ period_labels|join(' &rarr; ')|safe }})</th>
+          <th>3-Month Moving Average (SMA)</th>
+          <th>Projected Next Month</th>
+          <th>Surge Risk Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in room_predictions %}
+        <tr style="{% if r.moving_avg >= 3 %}background: #fffafa;{% endif %}">
+          <td><strong>Room {{ r.room_no }}</strong></td>
+          <td>Floor {{ r.floor }}</td>
+          <td>
+            <span style="font-family: monospace; font-weight: 700; font-size: 0.95rem; color: #1e293b;">
+              {{ r.history_str }}
+            </span>
+          </td>
+          <td>
+            <span style="font-weight: 700; color: {% if r.moving_avg >= 3 %}#b91c1c{% elif r.moving_avg >= 1.5 %}#b45309{% else %}#047857{% endif %};">
+              {{ r.moving_avg }} / mo
+            </span>
+          </td>
+          <td>
+            <span class="badge-normal" style="
+              font-weight: 700; font-size: 0.88rem;
+              background: {% if r.moving_avg >= 3 %}#fee2e2; color: #991b1b;{% elif r.moving_avg >= 1.5 %}#fef3c7; color: #92400e;{% else %}#d1fae5; color: #065f46;{% endif %}
+            ">
+              {{ r.projected_next_month }} issues
+            </span>
+          </td>
+          <td>
+            <span class="status-badge status-{{ r.badge_color }}">
+              {{ r.trend_badge }}
+            </span>
+          </td>
+          <td>
+            <a href="{{ url_for('admin_dashboard', floor=r.floor, search=r.room_no) }}" class="btn btn-secondary btn-sm">
+              View Complaints &rarr;
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Floor-Level Trend Predictions -->
+<div class="panel-card">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Floor-Level Aggregate Trend Projections</h2>
+      <p class="section-desc">Aggregated 3-month complaint moving averages and estimated monthly volume</p>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Floor Level</th>
+          <th>Monthly Trend ({{ period_labels|join(' &rarr; ')|safe }})</th>
+          <th>3-Month Moving Average</th>
+          <th>Projected Next Month</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fl in floor_predictions %}
+        <tr>
+          <td><strong>Floor {{ fl.floor }}</strong></td>
+          <td>
+            <span style="font-family: monospace; font-weight: 700; color: #1e293b;">
+              {{ fl.history_str }}
+            </span>
+          </td>
+          <td>
+            <strong>{{ fl.moving_avg }} issues / mo</strong>
+          </td>
+          <td>
+            <span class="badge-normal" style="font-weight: 700;">
+              {{ fl.projected_next_month }} complaints
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

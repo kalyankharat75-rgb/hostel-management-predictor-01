@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Asset Tracking & Replacement - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">Asset-Wise Complaint Tracking</h1>
+    <p class="section-desc">Monitor failure counts per asset and flag units with 3+ complaints for replacement</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <a href="{{ url_for('assets_list', replacement='1') }}" class="btn btn-sm {% if only_replacement %}btn-danger{% else %}btn-secondary{% endif %}">
+      ⚠️ Filter: Needs Replacement Only
+    </a>
+    {% if only_replacement or selected_floor or selected_type %}
+      <a href="{{ url_for('assets_list') }}" class="btn btn-sm btn-outline">Clear Filters</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Replacement Notice Banner if candidates exist -->
+<div class="panel-card" style="background: #fff8f8; border: 1px solid #fecaca; padding: 1.25rem;">
+  <div style="display: flex; align-items: center; gap: 0.75rem;">
+    <span style="font-size: 1.5rem;">🚨</span>
+    <div>
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: #991b1b; margin-bottom: 0.2rem;">
+        Proactive Replacement Policy: Threshold &ge; 3 Complaints in 6 Months
+      </h3>
+      <p style="font-size: 0.88rem; color: #7f1d1d;">
+        Assets with 3 or more logged complaints within the last 180 days are flagged as <strong>"Needs Replacement"</strong>. Continuing to perform patchwork repairs on these units incurs high labor costs and frequent student dissatisfaction.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="panel-card" style="padding: 1.25rem;">
+  <form method="GET" action="{{ url_for('assets_list') }}">
+    {% if only_replacement %}
+      <input type="hidden" name="replacement" value="1">
+    {% endif %}
+    <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; gap: 1rem;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Floor</label>
+        <select name="floor" class="form-control">
+          <option value="">All Floors</option>
+          {% for fl in floors %}
+            <option value="{{ fl }}" {% if selected_floor|string == fl|string %}selected{% endif %}>Floor {{ fl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Asset Type</label>
+        <select name="asset_type" class="form-control">
+          <option value="">All Types</option>
+          {% for at in asset_types %}
+            <option value="{{ at }}" {% if selected_type == at %}selected{% endif %}>{{ at }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn-primary btn-sm" style="flex: 1; height: 38px;">Filter Assets</button>
+        <a href="{{ url_for('assets_list') }}" class="btn btn-secondary btn-sm" style="height: 38px;">Reset</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Assets Table -->
+<div class="panel-card">
+  <!-- Interactive Live Filter Controls -->
+  <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+    <div style="flex: 1; min-width: 260px; position: relative;">
+      <input type="text" id="liveAssetSearch" class="form-control" placeholder="⚡ Live Filter: Type asset code (e.g. Fan-1), type, or room..." style="padding-left: 2.4rem; border-radius: var(--radius-full); box-shadow: var(--shadow-sm);">
+      <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--text-muted);">🔍</span>
+    </div>
+    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+      <button type="button" class="btn btn-secondary btn-sm asset-chip active" onclick="filterAssetTable('all', this)" style="border-radius: var(--radius-full);">All</button>
+      <button type="button" class="btn btn-secondary btn-sm asset-chip" onclick="filterAssetTable('Needs Replacement', this)" style="border-radius: var(--radius-full); color: #be123c; font-weight: 700;">🚨 Needs Replacement</button>
+      <button type="button" class="btn btn-secondary btn-sm asset-chip" onclick="filterAssetTable('Fan', this)" style="border-radius: var(--radius-full);">Fans</button>
+      <button type="button" class="btn btn-secondary btn-sm asset-chip" onclick="filterAssetTable('Geyser', this)" style="border-radius: var(--radius-full);">Geysers</button>
+      <button type="button" class="btn btn-secondary btn-sm asset-chip" onclick="filterAssetTable('Light', this)" style="border-radius: var(--radius-full);">Lights</button>
+      <button type="button" class="btn btn-secondary btn-sm asset-chip" onclick="filterAssetTable('Tap', this)" style="border-radius: var(--radius-full);">Taps</button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table assets-data-table">
+      <thead>
+        <tr>
+          <th>Asset Code</th>
+          <th>Type</th>
+          <th>Location</th>
+          <th>Recent Complaints (Last 6 Mos)</th>
+          <th>Lifetime Complaints</th>
+          <th>Active Unresolved</th>
+          <th>Health Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assets %}
+        <tr style="{% if a.recent_complaints >= 3 %}background-color: #fffaf0;{% endif %}">
+          <td>
+            <strong>{{ a.asset_code }}</strong>
+          </td>
+          <td>{{ a.asset_type }}</td>
+          <td>
+            <strong>Room {{ a.room_no }}</strong> &bull; Floor {{ a.floor }}
+          </td>
+          <td>
+            <span style="font-weight: 700; font-size: 1rem; color: {% if a.recent_complaints >= 3 %}#b91c1c{% elif a.recent_complaints > 0 %}#b45309{% else %}#059669{% endif %};">
+              {{ a.recent_complaints }}
+            </span>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">in 6 mos</span>
+          </td>
+          <td>{{ a.total_complaints }} total</td>
+          <td>
+            {% if a.active_complaints > 0 %}
+              <span class="status-badge status-pending">{{ a.active_complaints }} active</span>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.85rem;">0</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.recent_complaints >= 3 %}
+              <span class="badge-replacement">
+                🚨 Needs Replacement
+              </span>
+            {% elif a.recent_complaints == 2 %}
+              <span class="status-badge status-inprogress">
+                ⚠️ High Wear (2/3)
+              </span>
+            {% elif a.recent_complaints == 1 %}
+              <span class="badge-normal">
+                Moderate (1/3)
+              </span>
+            {% else %}
+              <span class="status-badge status-resolved">
+                ✓ Healthy
+              </span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('asset_detail', asset_id=a.id) }}" class="btn btn-secondary btn-sm">
+              View History &rarr;
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+            No assets match the filter criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const search = document.getElementById('liveAssetSearch');
+  const table = document.querySelector('.assets-data-table tbody');
+
+  if (search && table) {
+    search.addEventListener('input', () => {
+      const q = search.value.toLowerCase().trim();
+      const rows = table.querySelectorAll('tr');
+      rows.forEach(r => {
+        r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
+    });
+  }
+
+  window.filterAssetTable = function(type, btn) {
+    if (!table) return;
+    const chips = document.querySelectorAll('.asset-chip');
+    chips.forEach(c => c.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(r => {
+      if (type === 'all') {
+        r.style.display = '';
+      } else {
+        r.style.display = r.textContent.toLowerCase().includes(type.toLowerCase()) ? '' : 'none';
+      }
+    });
+  };
+});
+</script>
+{% endblock %}

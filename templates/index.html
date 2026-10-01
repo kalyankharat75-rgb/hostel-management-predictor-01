@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+  <h1>Hostel Maintenance Predictor</h1>
+  <p>An intelligent complaint tracking and failure prediction platform for hostel facilities. Features 3-month moving average trend forecasting, visual floor heatmaps, anti-duplicate alerts, and automated asset replacement recommendations.</p>
+  <div class="hero-actions">
+    <a href="{{ url_for('file_complaint') }}" class="btn btn-primary" style="background: #ffffff; color: #4338ca;">
+      ⚡ File a Complaint
+    </a>
+    <a href="{{ url_for('heatmap') }}" class="btn btn-secondary" style="background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3);">
+      🗺️ View 30-Day Heatmap
+    </a>
+    {% if not current_user %}
+      <a href="{{ url_for('login') }}" class="btn btn-secondary" style="background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3);">
+        Portal Login
+      </a>
+    {% elif current_user.role == 'admin' %}
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary" style="background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3);">
+        Admin Dashboard &rarr;
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Metrics Overview -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-icon indigo">📋</div>
+    <div class="metric-info">
+      <h4>Total Complaints</h4>
+      <div class="metric-value">{{ total_complaints }}</div>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon emerald">✓</div>
+    <div class="metric-info">
+      <h4>Resolved Issues</h4>
+      <div class="metric-value">{{ resolved_complaints }}</div>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon rose">⏳</div>
+    <div class="metric-info">
+      <h4>Pending Action</h4>
+      <div class="metric-value">{{ pending_complaints }}</div>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon amber">⚠️</div>
+    <div class="metric-info">
+      <h4>Needs Replacement</h4>
+      <div class="metric-value">{{ replacement_count }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Demo Accounts Helper -->
+{% if not current_user %}
+<div class="panel-card" style="border-left: 4px solid var(--primary); background: #f8faff; margin-bottom: 2rem;">
+  <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: #1e293b;">Default Demo Accounts for Testing</h3>
+  <div style="display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.9rem;">
+    <div>
+      <span class="role-tag role-admin">Admin</span>: <strong>admin@hostel.edu</strong> / password: <code>admin123</code>
+    </div>
+    <div>
+      <span class="role-tag role-student">Student</span>: <strong>rahul@hostel.edu</strong> / password: <code>student123</code>
+    </div>
+    <div style="color: var(--text-muted);">
+      Or submit anonymously without signing in!
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Core Differentiator Highlights -->
+<div class="panel-card">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Core System Differentiators</h2>
+      <p class="section-desc">Key modules addressing everyday hostel maintenance friction</p>
+    </div>
+  </div>
+
+  <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+    <a href="{{ url_for('file_complaint') }}" class="feature-card">
+      <div>
+        <div class="feature-icon">🔍</div>
+        <h3>1. Duplicate Issue Alert</h3>
+        <p>Pre-checks active complaints filed for the same asset within the last 7 days. Prevents redundant tickets with Yes/No verification options.</p>
+      </div>
+      <span class="feature-link">Test Duplicate Alert &rarr;</span>
+    </a>
+
+    <a href="{{ url_for('file_complaint') }}" class="feature-card">
+      <div>
+        <div class="feature-icon">🔒</div>
+        <h3>2. Anonymous Complaint Mode</h3>
+        <p>Students can file issues privately. Submitter name is masked in warden records as "Anonymous Student, Room {Room_No}" while keeping the room location intact for repairs.</p>
+      </div>
+      <span class="feature-link">File Private Ticket &rarr;</span>
+    </a>
+
+    <a href="{{ url_for('heatmap') }}" class="feature-card">
+      <div>
+        <div class="feature-icon">🗺️</div>
+        <h3>3. Visual Room Heatmap</h3>
+        <p>Interactive grid representing all floors and rooms color-coded by 30-day ticket density: Green (0-1), Yellow (2-3), and Red (4+ Hotspot). Click any room tile to inspect assets!</p>
+      </div>
+      <span class="feature-link">Open Visual Heatmap &rarr;</span>
+    </a>
+
+    <a href="{{ url_for('predictions_view') }}" class="feature-card">
+      <div>
+        <div class="feature-icon">📈</div>
+        <h3>4. Trend-Based Prediction</h3>
+        <p>Harnesses Pandas 3-month simple moving averages (SMA) per room and floor to forecast upcoming failure surges (e.g., Room 204: 2 &rarr; 3 &rarr; 5 &rarr; Projected 6-8).</p>
+      </div>
+      <span class="feature-link">View Trend Forecast &rarr;</span>
+    </a>
+
+    <a href="{{ url_for('admin_dashboard') }}" class="feature-card">
+      <div>
+        <div class="feature-icon">⚡</div>
+        <h3>5. Impact Score Prioritization</h3>
+        <p>Formula: <code>affected_students &times; severity_weight</code> (Electrical=3, Plumbing=2, Other=1). Automatically elevates urgent hazards to the top of the queue.</p>
+      </div>
+      <span class="feature-link">Open Admin Dashboard &rarr;</span>
+    </a>
+
+    <a href="{{ url_for('assets_list', replacement='1') }}" class="feature-card">
+      <div>
+        <div class="feature-icon">🚨</div>
+        <h3>6. Asset Replacement Flagging</h3>
+        <p>Automated policy flags any appliance with &ge; 3 complaints in 6 months (such as Fan-1 in Room 204) with a pulsing replacement badge to stop wasteful repeat repairs.</p>
+      </div>
+      <span class="feature-link">Inspect Replacement Units &rarr;</span>
+    </a>
+  </div>
+</div>
+{% endblock %}

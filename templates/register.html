@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 2rem auto;">
+  <div class="panel-card" style="box-shadow: var(--shadow-lg);">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+      <div class="brand-icon" style="margin: 0 auto 0.75rem; width: 44px; height: 44px; font-size: 1.4rem;">📝</div>
+      <h2 style="font-size: 1.4rem; font-weight: 800; color: #1e293b;">Create an Account</h2>
+      <p style="font-size: 0.88rem; color: var(--text-muted);">Register to track your complaints and get maintenance updates</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="form-group">
+        <label class="form-label" for="name">Full Name</label>
+        <input type="text" id="name" name="name" class="form-control" placeholder="e.g. John Doe" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Hostel / Institutional Email</label>
+        <input type="email" id="email" name="email" class="form-control" placeholder="john@hostel.edu" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="Choose a strong password" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="role">Account Role</label>
+        <select id="role" name="role" class="form-control" onchange="toggleStudentFields(this.value)">
+          <option value="student" selected>Student / Resident</option>
+          <option value="admin">Hostel Administrator / Warden</option>
+        </select>
+      </div>
+
+      <div id="student-specific-fields" class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="floor">Floor</label>
+          <select id="floor" name="floor" class="form-control">
+            <option value="1">Floor 1</option>
+            <option value="2">Floor 2</option>
+            <option value="3">Floor 3</option>
+            <option value="4">Floor 4</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="room_no">Room Number</label>
+          <input type="text" id="room_no" name="room_no" class="form-control" placeholder="e.g. 204">
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem; margin-bottom: 1.25rem;">
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
+      </div>
+
+      <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; text-align: center; font-size: 0.88rem; color: var(--text-muted);">
+        Already have an account? <a href="{{ url_for('login') }}" style="font-weight: 600;">Sign in here</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleStudentFields(role) {
+  const fields = document.getElementById('student-specific-fields');
+  if (role === 'admin') {
+    fields.style.display = 'none';
+  } else {
+    fields.style.display = 'grid';
+  }
+}
+</script>
+{% endblock %}

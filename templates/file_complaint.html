@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}File Complaint - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; margin: 0 auto;">
+  <div class="section-header">
+    <div>
+      <h1 class="section-title">Hostel Maintenance Request</h1>
+      <p class="section-desc">Report an issue with room fans, lights, geysers, taps, or switchboards</p>
+    </div>
+  </div>
+
+  <!-- Feature 6: Server-side Duplicate Alert Box (if triggered on submit) -->
+  {% if duplicate_alert and duplicate %}
+  <div class="panel-card" style="border: 2px solid #f59e0b; background: #fffbeb; margin-bottom: 1.5rem;">
+    <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+      <span style="font-size: 1.8rem;">⚠️</span>
+      <div style="flex: 1;">
+        <h3 style="color: #92400e; font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem;">
+          Duplicate Issue Warning
+        </h3>
+        <p style="color: #78350f; font-size: 0.92rem; margin-bottom: 0.75rem;">
+          <strong>This issue is already reported (Status: <span style="text-decoration: underline;">{{ duplicate.status }}</span>).</strong><br>
+          An open ticket (#{{ duplicate.id }}) for <strong>{{ duplicate.asset_code }}</strong> in <strong>Room {{ duplicate.room_no }}</strong> was filed on <em>{{ duplicate.date_filed }}</em>:
+          <br>
+          <em style="display: block; margin-top: 0.25rem; color: #451a03;">"{{ duplicate.description }}"</em>
+        </p>
+        <p style="font-weight: 600; color: #92400e; margin-bottom: 1rem;">
+          Do you still want to file a new one?
+        </p>
+
+        <!-- Yes / No Choice Form -->
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <form method="POST" action="{{ url_for('file_complaint') }}" style="display: inline;">
+            <input type="hidden" name="floor" value="{{ form_data.floor }}">
+            <input type="hidden" name="room_no" value="{{ form_data.room_no }}">
+            <input type="hidden" name="asset_id" value="{{ form_data.asset_id }}">
+            <input type="hidden" name="issue_type" value="{{ form_data.issue_type }}">
+            <input type="hidden" name="description" value="{{ form_data.description }}">
+            <input type="hidden" name="affected_students_count" value="{{ form_data.affected_students_count }}">
+            <input type="hidden" name="is_anonymous" value="{% if form_data.is_anonymous %}on{% endif %}">
+            <input type="hidden" name="confirmed_duplicate" value="1">
+            <button type="submit" class="btn btn-primary btn-sm" style="background: #b45309;">
+              Yes, submit new complaint anyway
+            </button>
+          </form>
+          <a href="{{ url_for('index') }}" class="btn btn-secondary btn-sm">
+            No, cancel submission
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Client-side Interactive Duplicate Alert Banner (Feature 6) -->
+  <div id="duplicate-alert-box" class="duplicate-alert-box" style="display: none;">
+    <div class="duplicate-alert-header">
+      <span>⚠️ This issue is already reported!</span>
+    </div>
+    <div id="duplicate-details" class="duplicate-alert-content"></div>
+    <div style="margin-top: 0.5rem; font-weight: 600; color: #78350f;">
+      Do you still want to file a new one?
+    </div>
+    <div class="duplicate-actions" style="margin-top: 0.75rem;">
+      <button type="button" id="proceed-duplicate-btn" class="btn btn-primary btn-sm" style="background: #d97706;">
+        Yes, proceed with new complaint
+      </button>
+      <button type="button" id="cancel-duplicate-btn" class="btn btn-secondary btn-sm" onclick="document.getElementById('asset-select').value=''; document.getElementById('duplicate-alert-box').style.display='none';">
+        No, change selection
+      </button>
+    </div>
+  </div>
+
+  <!-- Complaint Filing Form -->
+  <div class="panel-card">
+    <form id="complaintForm" method="POST" action="{{ url_for('file_complaint') }}">
+      <input type="hidden" id="confirmed-duplicate-input" name="confirmed_duplicate" value="0">
+
+      <!-- Step 1 & 2: Floor and Room (Auto-filters) -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="floor-select">1. Select Floor *</label>
+          <select id="floor-select" name="floor" class="form-control" required>
+            <option value="">-- Choose Floor --</option>
+            {% for f in floors %}
+              <option value="{{ f }}" {% if current_user and current_user.floor == f %}selected{% endif %}>Floor {{ f }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="room-select">2. Select Room *</label>
+          <select id="room-select" name="room_no" class="form-control" {% if not current_user or not current_user.room_no %}disabled{% endif %} required>
+            {% if current_user and current_user.room_no %}
+              <option value="{{ current_user.room_no }}" selected>Room {{ current_user.room_no }}</option>
+            {% else %}
+              <option value="">-- Select Floor First --</option>
+            {% endif %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 3: Asset in that room -->
+      <div class="form-group">
+        <label class="form-label" for="asset-select">3. Select Asset from Room *</label>
+        <select id="asset-select" name="asset_id" class="form-control" {% if not current_user or not current_user.room_no %}disabled{% endif %} required>
+          <option value="">-- Select Room First --</option>
+        </select>
+        <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem; display: block;">
+          Pre-check runs immediately to alert if an open ticket was filed in the last 7 days.
+        </small>
+      </div>
+
+      <!-- Step 4: Issue Type -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="issue-type-select">4. Issue Type *</label>
+          <select id="issue-type-select" name="issue_type" class="form-control" required>
+            <option value="">-- Select Nature of Problem --</option>
+            <option value="Not working">Not working</option>
+            <option value="Damaged">Damaged</option>
+            <option value="Making noise">Making noise</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <!-- Step 5: Affected Students Count (Feature 8) -->
+        <div class="form-group">
+          <label class="form-label" for="affected-count">5. Affected Students Count</label>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <input type="number" id="affected-count" name="affected_students_count" class="form-control" min="1" max="10" value="1" required style="max-width: 130px;">
+            <div id="impact-preview-badge" style="padding: 6px 12px; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 700; background: #e0e7ff; color: #3730a3; border: 1.5px solid #c7d2fe; display: flex; align-items: center; gap: 0.4rem;">
+              <span>⚡ Calculated Impact Score:</span>
+              <span id="impact-score-value" style="font-size: 1.15rem; font-weight: 800;">3</span>
+            </div>
+          </div>
+          <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.35rem; display: block;">
+            Used for Impact Score: <code>affected_students &times; severity_weight</code>.
+          </small>
+        </div>
+      </div>
+
+      <!-- Step 6: Description -->
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+          <label class="form-label" for="description" style="margin-bottom: 0;">6. Problem Description *</label>
+          <span id="char-count" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">0 characters</span>
+        </div>
+        <textarea id="description" name="description" class="form-control" placeholder="Provide details about the issue (e.g., fan makes loud screeching noise on regulator setting 3)..." required></textarea>
+      </div>
+
+      <!-- Feature 5: Anonymous Complaint Mode -->
+      <div class="form-group" style="padding: 0.75rem; background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <label class="form-checkbox">
+          <input type="checkbox" name="is_anonymous" id="is_anonymous" {% if not current_user %}checked{% endif %}>
+          <span><strong>File anonymously</strong> (Identity hidden in admin dashboard as "Anonymous Student, Room {Room_No}")</span>
+        </label>
+      </div>
+
+      <div style="margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+        <button type="submit" id="submitBtn" class="btn btn-primary" style="padding: 0.75rem 1.75rem;">
+          🚀 Submit Complaint
+        </button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const floorSelect = document.getElementById('floor-select');
+  const roomSelect = document.getElementById('room-select');
+  const assetSelect = document.getElementById('asset-select');
+  const duplicateAlertBox = document.getElementById('duplicate-alert-box');
+  const duplicateDetails = document.getElementById('duplicate-details');
+  const proceedDuplicateBtn = document.getElementById('proceed-duplicate-btn');
+  const confirmedDuplicateInput = document.getElementById('confirmed-duplicate-input');
+
+  // Load rooms when floor changes
+  if (floorSelect && roomSelect) {
+    floorSelect.addEventListener('change', async () => {
+      const fl = floorSelect.value;
+      roomSelect.innerHTML = '<option value="">-- Select Room --</option>';
+      assetSelect.innerHTML = '<option value="">-- Select Room First --</option>';
+      assetSelect.disabled = true;
+      if (duplicateAlertBox) duplicateAlertBox.style.display = 'none';
+
+      if (!fl) {
+        roomSelect.disabled = true;
+        return;
+      }
+
+      const res = await fetch(`/api/rooms?floor=${encodeURIComponent(fl)}`);
+      const rooms = await res.json();
+      roomSelect.disabled = false;
+      rooms.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = `Room ${r}`;
+        roomSelect.appendChild(opt);
+      });
+    });
+
+    // Load assets when room changes
+    roomSelect.addEventListener('change', async () => {
+      const rm = roomSelect.value;
+      assetSelect.innerHTML = '<option value="">-- Select Asset --</option>';
+      if (duplicateAlertBox) duplicateAlertBox.style.display = 'none';
+
+      if (!rm) {
+        assetSelect.disabled = true;
+        return;
+      }
+
+      const res = await fetch(`/api/assets?room_no=${encodeURIComponent(rm)}`);
+      const assets = await res.json();
+      assetSelect.disabled = false;
+      assets.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = `${a.asset_code} (${a.asset_type})`;
+        assetSelect.appendChild(opt);
+      });
+    });
+
+    // Feature 6: Check Duplicate when asset is selected
+    assetSelect.addEventListener('change', async () => {
+      const aid = assetSelect.value;
+      if (duplicateAlertBox) duplicateAlertBox.style.display = 'none';
+      if (confirmedDuplicateInput) confirmedDuplicateInput.value = '0';
+      if (!aid) return;
+
+      const res = await fetch(`/api/check_duplicate?asset_id=${encodeURIComponent(aid)}`);
+      const data = await res.json();
+      if (data.exists) {
+        const c = data.complaint;
+        duplicateDetails.innerHTML = `
+          <strong>Existing Ticket #${c.id}:</strong> ${c.asset_code} in Room ${c.room_no} has an unresolved issue 
+          (Status: <strong>${c.status}</strong>, Type: <strong>${c.issue_type}</strong>, Filed: ${c.date_filed}).<br>
+          <em>"${c.description}"</em>
+        `;
+        duplicateAlertBox.style.display = 'block';
+      }
+    });
+
+    if (proceedDuplicateBtn) {
+      proceedDuplicateBtn.addEventListener('click', () => {
+        if (confirmedDuplicateInput) confirmedDuplicateInput.value = '1';
+        duplicateAlertBox.style.background = '#f1f5f9';
+        duplicateAlertBox.style.borderColor = '#cbd5e1';
+        duplicateDetails.innerHTML = `<span style="color:#475569;">✓ Duplicate warning acknowledged. You may submit your complaint.</span>`;
+        proceedDuplicateBtn.style.display = 'none';
+      });
+    }
+
+    // Auto-load assets if room pre-selected
+    if (roomSelect.value) {
+      fetch(`/api/assets?room_no=${encodeURIComponent(roomSelect.value)}`)
+        .then(r => r.json())
+        .then(assets => {
+          assetSelect.disabled = false;
+          assetSelect.innerHTML = '<option value="">-- Select Asset --</option>';
+          assets.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a.id;
+            opt.textContent = `${a.asset_code} (${a.asset_type})`;
+            assetSelect.appendChild(opt);
+          });
+        });
+    }
+  }
+});
+</script>
+{% endblock %}

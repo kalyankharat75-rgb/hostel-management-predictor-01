@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div style="max-width: 440px; margin: 2rem auto;">
+  <div class="panel-card" style="box-shadow: var(--shadow-lg);">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+      <div class="brand-icon" style="margin: 0 auto 0.75rem; width: 44px; height: 44px; font-size: 1.4rem;">🔐</div>
+      <h2 style="font-size: 1.4rem; font-weight: 800; color: #1e293b;">Sign In</h2>
+      <p style="font-size: 0.88rem; color: var(--text-muted);">Access your complaint portal or admin dashboard</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}">
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-control" placeholder="e.g. admin@hostel.edu or rahul@hostel.edu" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+      </div>
+
+      <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; text-align: center; font-size: 0.88rem; color: var(--text-muted);">
+        Don't have an account? <a href="{{ url_for('register') }}" style="font-weight: 600;">Register here</a>
+      </div>
+    </form>
+
+    <div style="margin-top: 1.25rem; padding: 1rem; background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div style="font-weight: 700; font-size: 0.85rem; color: #1e293b; margin-bottom: 0.6rem;">One-Click Demo Access:</div>
+      <div style="display: flex; gap: 0.5rem; flex-direction: column;">
+        <button type="button" class="btn btn-secondary btn-sm" style="background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; font-weight: 600; text-align: left; justify-content: flex-start;" onclick="quickLogin('admin@hostel.edu', 'admin123')">
+          ⚡ One-Click Login as Admin (Warden)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; text-align: left; justify-content: flex-start;" onclick="quickLogin('rahul@hostel.edu', 'student123')">
+          👤 One-Click Login as Student (Rahul)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function quickLogin(email, password) {
+  document.getElementById('email').value = email;
+  document.getElementById('password').value = password;
+  document.querySelector('form').submit();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">Admin Maintenance Dashboard</h1>
+    <p class="section-desc">Complaints sorted by Impact Score (Urgency), with real-time status management and charts</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('assets_list') }}" class="btn btn-secondary btn-sm">🚨 Assets & Replacement</a>
+    <a href="{{ url_for('heatmap') }}" class="btn btn-secondary btn-sm">🗺️ Visual Heatmap</a>
+    <a href="{{ url_for('predictions_view') }}" class="btn btn-primary btn-sm">📈 Trend Predictions</a>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-icon indigo">📋</div>
+    <div class="metric-info">
+      <h4>Total Complaints</h4>
+      <div class="metric-value">{{ total_count }}</div>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon rose">🔴</div>
+    <div class="metric-info">
+      <h4>Pending</h4>
+      <div class="metric-value">{{ pending_count }}</div>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon amber">🟡</div>
+    <div class="metric-info">
+      <h4>In Progress</h4>
+      <div class="metric-value">{{ in_progress_count }}</div>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon emerald">🟢</div>
+    <div class="metric-info">
+      <h4>Resolved</h4>
+      <div class="metric-value">{{ resolved_count }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Feature 3: Asset Replacement Flag Notice -->
+{% if replacement_candidates %}
+<div class="panel-card" style="background: #fef2f2; border: 2px solid #fecaca; margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <span style="font-size: 1.8rem;">🚨</span>
+      <div>
+        <h3 style="color: #991b1b; font-size: 1.1rem; font-weight: 800; margin-bottom: 0.2rem;">
+          {{ replacement_candidates|length }} Assets Flagged: Needs Replacement (&ge; 3 Complaints in 6 Months)
+        </h3>
+        <p style="color: #7f1d1d; font-size: 0.88rem;">
+          These appliances have suffered repeated breakdowns and require full unit replacement instead of ongoing patchwork:
+        </p>
+      </div>
+    </div>
+    <a href="{{ url_for('assets_list', replacement='1') }}" class="btn btn-danger btn-sm">
+      View All Flagged Units &rarr;
+    </a>
+  </div>
+  <div style="margin-top: 0.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    {% for cand in replacement_candidates %}
+      <a href="{{ url_for('asset_history', asset_id=cand.id) }}" class="badge-normal" style="background: white; border: 1px solid #fca5a5; color: #991b1b; font-weight: 700; padding: 6px 12px; text-decoration: none; border-radius: var(--radius-md);">
+        ⚠️ {{ cand.asset_code }} in Room {{ cand.room_no }} ({{ cand.recent_complaints }} complaints in 6 mos) &rarr;
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Feature 9: Charts generated via Pandas + Matplotlib saved in static/charts/ -->
+<div class="section-header" style="margin-top: 1rem;">
+  <div>
+    <h2 class="section-title">Visual Analytics (Matplotlib + Pandas)</h2>
+    <p class="section-desc">Server-generated charts saved in <code>static/charts/</code></p>
+  </div>
+</div>
+
+<div class="charts-grid" style="margin-bottom: 2rem;">
+  <!-- Floor Bar Chart -->
+  <div class="chart-card">
+    <h3>Complaint Count by Floor</h3>
+    <img src="{{ url_for('static', filename='charts/floor_bar.png') }}" alt="Complaint Count by Floor Bar Chart" class="chart-img">
+  </div>
+
+  <!-- Asset Pie Chart -->
+  <div class="chart-card">
+    <h3>Distribution by Asset Type</h3>
+    <img src="{{ url_for('static', filename='charts/asset_pie.png') }}" alt="Asset Type Complaint Distribution Pie Chart" class="chart-img">
+  </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="panel-card" style="padding: 1.25rem;">
+  <form method="GET" action="{{ url_for('admin_dashboard') }}">
+    <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); align-items: end; gap: 1rem;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Floor</label>
+        <select name="floor" class="form-control">
+          <option value="">All Floors</option>
+          {% for fl in floors %}
+            <option value="{{ fl }}" {% if selected_floor|string == fl|string %}selected{% endif %}>Floor {{ fl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Asset Type</label>
+        <select name="asset_type" class="form-control">
+          <option value="">All Asset Types</option>
+          {% for at in asset_types %}
+            <option value="{{ at }}" {% if selected_asset_type == at %}selected{% endif %}>{{ at }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-control">
+          <option value="">All Statuses</option>
+          <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+          <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+          <option value="Resolved" {% if selected_status == 'Resolved' %}selected{% endif %}>Resolved</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Start Date</label>
+        <input type="date" name="start_date" class="form-control" value="{{ selected_start_date }}">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">End Date</label>
+        <input type="date" name="end_date" class="form-control" value="{{ selected_end_date }}">
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn-primary btn-sm" style="flex: 1; height: 38px;">Apply Filters</button>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm" style="height: 38px;">Reset</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Complaints Table with Feature 8: Impact Score Priority & Feature 5: Anonymous Masking -->
+<div class="panel-card">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Complaints Queue (Sorted by Impact Score Descending)</h2>
+      <p class="section-desc">Formula: <code>Impact Score = Affected Students &times; Severity Weight (Electrical=3, Plumbing=2, Other=1)</code></p>
+    </div>
+  </div>
+
+  <!-- Interactive Controls: Live Instant Search & Status Filter Chips -->
+  <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+    <div style="flex: 1; min-width: 280px; position: relative;">
+      <input type="text" id="liveTableSearch" class="form-control" placeholder="⚡ Live Filter: Type room, asset, student name, or issue..." style="padding-left: 2.4rem; border-radius: var(--radius-full); box-shadow: var(--shadow-sm);">
+      <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--text-muted);">🔍</span>
+    </div>
+
+    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+      <button type="button" class="btn btn-secondary btn-sm filter-chip" onclick="filterTableByStatus('all', this)" style="border-radius: var(--radius-full);">
+        All ({{ total_count }})
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm filter-chip" onclick="filterTableByStatus('pending', this)" style="border-radius: var(--radius-full); color: #be123c;">
+        🔴 Pending ({{ pending_count }})
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm filter-chip" onclick="filterTableByStatus('in progress', this)" style="border-radius: var(--radius-full); color: #b45309;">
+        🟡 In Progress ({{ in_progress_count }})
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm filter-chip" onclick="filterTableByStatus('resolved', this)" style="border-radius: var(--radius-full); color: #047857;">
+        🟢 Resolved ({{ resolved_count }})
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm filter-chip" onclick="filterTableByStatus('replacement', this)" style="border-radius: var(--radius-full); color: #be123c; font-weight: 700;">
+        🚨 Needs Replacement
+      </button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="exportTableToCSV('hostel_complaints.csv')" style="border-radius: var(--radius-full);" title="Export complaints table to CSV">
+        📥 Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Priority / Impact</th>
+          <th>Ticket</th>
+          <th>Location & Asset</th>
+          <th>Issue Type</th>
+          <th>Description</th>
+          <th>Reported By (Anon Mode)</th>
+          <th>Date Filed</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in complaints %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="badge-normal" style="
+                background: {% if c.impact_score >= 9 %}#fee2e2; color: #991b1b; font-weight: 800; border: 1px solid #fecaca;
+                            {% elif c.impact_score >= 6 %}#fef3c7; color: #92400e; font-weight: 700; border: 1px solid #fde68a;
+                            {% else %}#f1f5f9; color: #334155; font-weight: 600;{% endif %}
+                font-size: 0.85rem; padding: 3px 8px;
+              ">
+                ⚡ Score: {{ c.impact_score }}
+              </span>
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+              {{ c.affected_students_count }} users &times; wt {{ c.severity_weight }}
+            </div>
+          </td>
+          <td><strong>#{{ c.id }}</strong></td>
+          <td>
+            <strong>Room {{ c.room_no }}</strong> (Fl. {{ c.floor }})<br>
+            <a href="{{ url_for('asset_history', asset_id=c.asset_id) }}" title="Inspect asset history and replacement status">
+              {{ c.asset_code }} ({{ c.asset_type }}) &rarr;
+            </a>
+            {% if c.asset_id in replacement_asset_ids %}
+              <div style="margin-top: 4px;">
+                <span class="badge-replacement" style="font-size: 0.72rem; padding: 2px 6px;">
+                  🚨 Needs Replacement
+                </span>
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge-normal" style="font-weight: 600;">{{ c.issue_type }}</span>
+          </td>
+          <td style="max-width: 230px;">
+            <div style="font-size: 0.86rem; color: #1e293b;">{{ c.description }}</div>
+            {% if c.status == 'Resolved' and c.remarks %}
+              <div style="font-size: 0.78rem; color: #059669; margin-top: 0.35rem; background: #ecfdf5; padding: 2px 6px; border-radius: 4px;">
+                <strong>Fix:</strong> {{ c.remarks }} (by {{ c.resolved_by }})
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <!-- Feature 5: Anonymous display masking -->
+            {% if c.is_anonymous %}
+              <span style="font-size: 0.82rem; color: #64748b; font-weight: 600; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">
+                🔒 {{ c.display_reporter }}
+              </span>
+            {% else %}
+              <span style="font-size: 0.85rem; font-weight: 600; color: #1e293b;">
+                👤 {{ c.display_reporter }}
+              </span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-muted); white-space: nowrap;">
+            {{ c.date_filed }}
+          </td>
+          <td>
+            {% if c.status == 'Pending' %}
+              <span class="status-badge status-pending">Pending</span>
+            {% elif c.status == 'In Progress' %}
+              <span class="status-badge status-inprogress">In Progress</span>
+            {% else %}
+              <span class="status-badge status-resolved">Resolved</span>
+            {% endif %}
+          </td>
+          <td>
+            <!-- Status Update Action (Pending -> In Progress -> Resolved) -->
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              {% if c.status == 'Pending' %}
+                <form method="POST" action="{{ url_for('update_complaint_status', complaint_id=c.id) }}" style="display:inline;">
+                  <input type="hidden" name="status" value="In Progress">
+                  <button type="submit" class="btn btn-secondary btn-sm" title="Mark In Progress">Start Work</button>
+                </form>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openResolutionModal({{ c.id }}, '{{ current_user.name }}')">
+                  Resolve...
+                </button>
+              {% elif c.status == 'In Progress' %}
+                <button type="button" class="btn btn-primary btn-sm" style="background: #059669;" onclick="openResolutionModal({{ c.id }}, '{{ current_user.name }}')">
+                  ✓ Resolve
+                </button>
+                <form method="POST" action="{{ url_for('update_complaint_status', complaint_id=c.id) }}" style="display:inline;">
+                  <input type="hidden" name="status" value="Pending">
+                  <button type="submit" class="btn btn-secondary btn-sm" title="Revert to Pending">Revert</button>
+                </form>
+              {% else %}
+                <button type="button" class="btn btn-outline btn-sm" onclick="openResolutionModal({{ c.id }}, '{{ c.resolved_by or current_user.name }}')">
+                  Edit Remarks
+                </button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+            No complaints match the filter criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Feature 2: Resolution Remarks Modal Prompt -->
+<div id="resolutionModal" class="modal-backdrop">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h3>Mark Complaint #<span id="modalComplaintId"></span> as Resolved</h3>
+      <button type="button" class="modal-close" onclick="closeResolutionModal()">&times;</button>
+    </div>
+    <form id="resolutionForm" method="POST">
+      <input type="hidden" name="status" value="Resolved">
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Record resolution details to commit into the <code>Resolution_Log</code> table.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label" for="modalResolvedBy">Resolved By (Technician / Staff Name) *</label>
+          <input type="text" id="modalResolvedBy" name="resolved_by" class="form-control" placeholder="e.g. Technician Ramesh / Plumber Dinesh" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modalRemarks">Resolution Remarks *</label>
+          <textarea id="modalRemarks" name="remarks" class="form-control" placeholder="e.g. Replaced capacitor and aligned motor downrod. Tested and working." required></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeResolutionModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="background: #059669;">Confirm & Save Resolution</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportTableToCSV(filename) {
+  const rows = document.querySelectorAll('.data-table tr');
+  let csv = [];
+  rows.forEach(r => {
+    if (r.style.display === 'none') return;
+    const cols = r.querySelectorAll('th, td');
+    let rowData = [];
+    cols.forEach(c => {
+      let text = c.innerText.replace(/"/g, '""').replace(/\n/g, ' ').trim();
+      rowData.push(`"${text}"`);
+    });
+    csv.push(rowData.join(','));
+  });
+  const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+  const downloadLink = document.createElement('a');
+  downloadLink.download = filename;
+  downloadLink.href = window.URL.createObjectURL(csvFile);
+  downloadLink.style.display = 'none';
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+}
+</script>
+{% endblock %}

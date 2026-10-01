@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}Seminar Presentation Guide - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<style>
+.slide-tab {
+  border-radius: var(--radius-full);
+  outline: none !important;
+  text-decoration: none !important;
+  border-bottom: none !important;
+  box-shadow: none;
+}
+.slide-tab:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.slide-tab.active {
+  background: #1e1b4b !important;
+  color: #ffffff !important;
+  border-color: #1e1b4b !important;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(30, 27, 75, 0.25) !important;
+}
+</style>
+<!-- Presentation Header -->
+<div class="hero-card" style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #312e81 100%);">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="badge-normal" style="background: rgba(255,255,255,0.15); color: #c7d2fe; font-weight: 700; border: none; margin-bottom: 0.75rem; display: inline-block;">
+        🎓 Academic Seminar & Project Defense Kit
+      </span>
+      <h1 style="font-size: 2.3rem;">Hostel Maintenance Predictor</h1>
+      <p style="max-width: 720px; font-size: 1.05rem;">
+        An intelligent complaint tracking and data-driven infrastructure forecasting system. Built for facility managers to transition from reactive patchwork to proactive, predictive maintenance.
+      </p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+      <a href="{{ url_for('reset_demo_data') }}" class="btn btn-secondary btn-sm" onclick="return confirm('Reset all records back to pristine presentation demo state?')" style="background: #ffffff; color: #b91c1c; border-color: #fca5a5; font-weight: 700;">
+        🔄 Reset to Pristine Demo State
+      </a>
+      <span style="font-size: 0.75rem; color: #cbd5e1;">(Restores Room 204 trend & Fan-1 replacement flag)</span>
+    </div>
+  </div>
+</div>
+
+<!-- Seminar Navigation Tabs -->
+<div class="panel-card" style="padding: 0.85rem 1.25rem; margin-bottom: 2rem;">
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+    <span style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-right: 0.5rem;">Seminar Sections:</span>
+    <button class="btn btn-secondary btn-sm slide-tab active" onclick="showSlide('sec-overview', this)">1. System Overview</button>
+    <button class="btn btn-secondary btn-sm slide-tab" onclick="showSlide('sec-arch', this)">2. Architecture & Tech Stack</button>
+    <button class="btn btn-secondary btn-sm slide-tab" onclick="showSlide('sec-math', this)">3. Math & Formulas</button>
+    <button class="btn btn-secondary btn-sm slide-tab" onclick="showSlide('sec-schema', this)">4. Database Schema (ER)</button>
+    <button class="btn btn-secondary btn-sm slide-tab" onclick="showSlide('sec-demo', this)" style="background: #e0e7ff; color: #3730a3; font-weight: 800;">5. Live Demo Script 🚀</button>
+  </div>
+</div>
+
+<!-- SECTION 1: SYSTEM OVERVIEW -->
+<div id="sec-overview" class="slide-section">
+  <div class="panel-card">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">1. Problem Statement & Proposed Solution</h2>
+        <p class="section-desc">Why traditional hostel maintenance fails and how predictive analytics resolves it</p>
+      </div>
+    </div>
+
+    <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem;">
+      <div style="padding: 1.25rem; background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: var(--radius-md);">
+        <h3 style="color: #9f1239; font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem;">
+          ❌ Traditional Maintenance Issues
+        </h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.9rem; color: #881337; line-height: 1.7;">
+          <li><strong>Paper registers & WhatsApp logs:</strong> Inefficient tracking, lost complaints, no accountability.</li>
+          <li><strong>Duplicate Ticket Clutter:</strong> 5 roommates independently report the same broken fan, spamming the queue.</li>
+          <li><strong>Sunk Cost on Broken Assets:</strong> Repairing a burnt motor 4 times instead of replacing it costs more than buying a new one.</li>
+          <li><strong>Purely Reactive Operations:</strong> Wardens wait for complete breakdowns before taking action.</li>
+        </ul>
+      </div>
+
+      <div style="padding: 1.25rem; background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: var(--radius-md);">
+        <h3 style="color: #065f46; font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem;">
+          ✅ Predictive System Solution
+        </h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.9rem; color: #064e3b; line-height: 1.7;">
+          <li><strong>Anti-Duplicate Alert Engine:</strong> Real-time 7-day window search prevents redundant tickets.</li>
+          <li><strong>Dynamic Impact Prioritization:</strong> Multiplies affected user count by hazard severity weight.</li>
+          <li><strong>3-Month Moving Average (SMA) Forecasting:</strong> Forecasts upcoming failure surge per room.</li>
+          <li><strong>Automated Replacement Flagging:</strong> Units with &ge; 3 complaints in 6 months are flagged for replacement.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2: ARCHITECTURE & TECH STACK -->
+<div id="sec-arch" class="slide-section" style="display: none;">
+  <div class="panel-card">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">2. Technology Stack & Architectural Decisions</h2>
+        <p class="section-desc">Technical justification for academic evaluation</p>
+      </div>
+    </div>
+
+    <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+      <div style="padding: 1.25rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.4rem;">🐍</div>
+        <h3 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 0.25rem;">Python & Flask</h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted);">
+          Lightweight WSGI microframework delivering low latency, clean REST/Jinja routing, and native integration with Python's data science stack.
+        </p>
+      </div>
+
+      <div style="padding: 1.25rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.4rem;">🗄️</div>
+        <h3 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 0.25rem;">SQLite 3</h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted);">
+          ACID-compliant relational database engine. Zero configuration, reliable transactional integrity for users, assets, and resolution logs.
+        </p>
+      </div>
+
+      <div style="padding: 1.25rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.4rem;">🐼</div>
+        <h3 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 0.25rem;">Pandas Analytics</h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted);">
+          Vectorized data structures for temporal month-period grouping, rolling mean calculations, and statistical failure density analysis.
+        </p>
+      </div>
+
+      <div style="padding: 1.25rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.4rem;">📊</div>
+        <h3 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 0.25rem;">Matplotlib (Headless)</h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted);">
+          Server-side chart generation using the non-interactive Agg backend, outputting high-DPI PNG visualizations for warden dashboards.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3: MATH & FORMULAS -->
+<div id="sec-math" class="slide-section" style="display: none;">
+  <div class="panel-card">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">3. Mathematical Modeling & Algorithmic Logic</h2>
+        <p class="section-desc">Key formulas implemented in the codebase to show examiners</p>
+      </div>
+    </div>
+
+    <!-- Formula A: Impact Score -->
+    <div style="margin-bottom: 1.5rem; padding: 1.25rem; background: #f8fafc; border-left: 4px solid var(--primary); border-radius: var(--radius-md);">
+      <h3 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 0.35rem;">
+        A. Urgency & Impact Score Formula (Feature 8)
+      </h3>
+      <div style="background: white; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-family: monospace; font-size: 1.05rem; font-weight: 700; color: #3730a3; margin-bottom: 0.5rem;">
+        Impact Score = Affected Students Count &times; Severity Weight (W)
+      </div>
+      <p style="font-size: 0.88rem; color: #475569;">
+        Where severity weight depends on asset type risk:
+        <br>&bull; <strong>Electrical (Fan, Light, Switchboard)</strong>: $W = 3$ (Sparks, heat hazard, total darkness)
+        <br>&bull; <strong>Plumbing (Geyser, Tap)</strong>: $W = 2$ (Water leakage, hygiene disruption)
+        <br>&bull; <strong>Other Assets</strong>: $W = 1$
+      </p>
+    </div>
+
+    <!-- Formula B: 3-Month Moving Average Prediction -->
+    <div style="margin-bottom: 1.5rem; padding: 1.25rem; background: #f8fafc; border-left: 4px solid var(--secondary); border-radius: var(--radius-md);">
+      <h3 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 0.35rem;">
+        B. 3-Month Simple Moving Average (SMA) Trend Prediction (Feature 4)
+      </h3>
+      <div style="background: white; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-family: monospace; font-size: 1.05rem; font-weight: 700; color: #0891b2; margin-bottom: 0.5rem;">
+        SMA_{3} = (C_{month-1} + C_{month-2} + C_{month-3}) / 3
+      </div>
+      <p style="font-size: 0.88rem; color: #475569;">
+        If acceleration slope $S = C_{month-1} - C_{month-2} > 0$ and $C_{month-2} > C_{month-3}$, the system flags an <strong>Accelerating Wear Surge</strong> and projects next month estimate:
+        <br><code>Projected Low = C_{month-1} + 1</code>, <code>Projected High = C_{month-1} + S + 1</code>.
+        <br><em>(E.g., Room 204: 2 &rarr; 3 &rarr; 5 trend yields projected 6 &ndash; 8 complaints next month!)</em>
+      </p>
+    </div>
+
+    <!-- Formula C: Replacement Policy Criteria -->
+    <div style="padding: 1.25rem; background: #f8fafc; border-left: 4px solid var(--danger); border-radius: var(--radius-md);">
+      <h3 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 0.35rem;">
+        C. Asset Replacement Policy Threshold (Feature 3)
+      </h3>
+      <div style="background: white; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-family: monospace; font-size: 1.05rem; font-weight: 700; color: #be123c; margin-bottom: 0.5rem;">
+        Flag "Needs Replacement" IF Recent Complaints (T &ge; Now - 180 Days) &ge; 3
+      </div>
+      <p style="font-size: 0.88rem; color: #475569;">
+        Prevents diminishing returns on maintenance labor. Instead of repeating repairs on exhausted assemblies, the system highlights candidate appliances directly to the hostel procurement office.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 4: DATABASE SCHEMA -->
+<div id="sec-schema" class="slide-section" style="display: none;">
+  <div class="panel-card">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">4. Relational Database Schema (SQLite)</h2>
+        <p class="section-desc">Normalized database entities and foreign key associations</p>
+      </div>
+    </div>
+
+    <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+      <div style="border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; background: #fff;">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem;">👤 Users Table</h4>
+        <div style="font-family: monospace; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6;">
+          &bull; id: INTEGER PRIMARY KEY<br>
+          &bull; name: TEXT<br>
+          &bull; email: TEXT UNIQUE<br>
+          &bull; password: TEXT<br>
+          &bull; role: TEXT ('student' | 'admin')<br>
+          &bull; room_no: TEXT<br>
+          &bull; floor: INTEGER
+        </div>
+      </div>
+
+      <div style="border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; background: #fff;">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--secondary); margin-bottom: 0.5rem;">⚙️ Assets Table</h4>
+        <div style="font-family: monospace; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6;">
+          &bull; id: INTEGER PRIMARY KEY<br>
+          &bull; room_no: TEXT<br>
+          &bull; floor: INTEGER<br>
+          &bull; asset_type: TEXT<br>
+          &bull; asset_code: TEXT ('Fan-1', etc.)
+        </div>
+      </div>
+
+      <div style="border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; background: #fff;">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #b45309; margin-bottom: 0.5rem;">📋 Complaints Table</h4>
+        <div style="font-family: monospace; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6;">
+          &bull; id: INTEGER PRIMARY KEY<br>
+          &bull; user_id: INTEGER FK (nullable if anon)<br>
+          &bull; asset_id: INTEGER FK<br>
+          &bull; room_no: TEXT, floor: INTEGER<br>
+          &bull; issue_type, description: TEXT<br>
+          &bull; date_filed, status: TEXT<br>
+          &bull; is_anonymous: INTEGER (0/1)<br>
+          &bull; affected_students_count: INTEGER
+        </div>
+      </div>
+
+      <div style="border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; background: #fff;">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--success); margin-bottom: 0.5rem;">📝 Resolution_Log Table</h4>
+        <div style="font-family: monospace; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6;">
+          &bull; id: INTEGER PRIMARY KEY<br>
+          &bull; complaint_id: INTEGER FK<br>
+          &bull; resolved_date: TEXT<br>
+          &bull; resolved_by: TEXT<br>
+          &bull; remarks: TEXT (Action taken)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5: LIVE DEMO SCRIPT -->
+<div id="sec-demo" class="slide-section" style="display: none;">
+  <div class="panel-card" style="border: 2px solid var(--primary); background: #fdfdff;">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">5. Seminar Live Demonstration Script (Step-by-Step)</h2>
+        <p class="section-desc">Follow these exact 6 steps in front of your seminar audience</p>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <!-- Step 1 -->
+      <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <span style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">1</span>
+        <div style="flex: 1;">
+          <h4 style="font-weight: 800; margin-bottom: 0.25rem;">Demonstrate Cascading Selection & Live Impact Calculation</h4>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Open the Complaint Filing form. Show how choosing Floor 2 filters rooms to only 201-204, and selecting Room 204 loads only its assets. Point out the <code>⚡ Live Impact Score</code> calculating dynamically.
+          </p>
+          <a href="{{ url_for('file_complaint') }}" target="_blank" class="btn btn-primary btn-sm">Launch Complaint Registration &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <span style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">2</span>
+        <div style="flex: 1;">
+          <h4 style="font-weight: 800; margin-bottom: 0.25rem;">Trigger the Duplicate Complaint Alert (Feature 6)</h4>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Select <strong>Floor 2 &rarr; Room 204 &rarr; Fan-1</strong>. Immediately show the seminar panel the warning banner: <em>"This issue is already reported (Status: In Progress). Do you still want to file a new one?"</em> with Yes/No options.
+          </p>
+          <a href="{{ url_for('file_complaint') }}" target="_blank" class="btn btn-secondary btn-sm">Test Duplicate Alert &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <span style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">3</span>
+        <div style="flex: 1;">
+          <h4 style="font-weight: 800; margin-bottom: 0.25rem;">Showcase the Visual Heatmap & Click-to-Inspect (Feature 7)</h4>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Open Heatmap. Explain why Room 204 is Red (4+ complaints), Room 302 is Yellow (2-3), and Room 101 is Green (0-1). Click on Room 204 tile to open the <strong>Interactive Quick Inspect Modal</strong> showing its installed assets!
+          </p>
+          <a href="{{ url_for('heatmap') }}" target="_blank" class="btn btn-secondary btn-sm">Launch Visual Heatmap &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <span style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">4</span>
+        <div style="flex: 1;">
+          <h4 style="font-weight: 800; margin-bottom: 0.25rem;">Explain Trend-Based Moving Average Prediction (Feature 4)</h4>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Open Predictions. Highlight Room 204: <strong>2 &rarr; 3 &rarr; 5 complaints trend &rarr; Projected 6-8 next month</strong>. Demonstrate the live filter chips and room search box.
+          </p>
+          <a href="{{ url_for('predictions_view') }}" target="_blank" class="btn btn-secondary btn-sm">Launch Trend Predictions &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <span style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">5</span>
+        <div style="flex: 1;">
+          <h4 style="font-weight: 800; margin-bottom: 0.25rem;">Present Asset Replacement Flagging (Feature 3)</h4>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Show Fan-1 in Room 204 (4 complaints in 6 months) and Tap-1 in Room 102. Explain the threshold criteria (&ge; 3 complaints) and show the pulsing <code>🚨 Needs Replacement</code> badge.
+          </p>
+          <a href="{{ url_for('asset_history', asset_id=50) }}" target="_blank" class="btn btn-secondary btn-sm">Inspect Fan-1 Replacement &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <span style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">6</span>
+        <div style="flex: 1;">
+          <h4 style="font-weight: 800; margin-bottom: 0.25rem;">Admin Dashboard Triage, Matplotlib Charts & Resolution Log Modal</h4>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Open Admin Dashboard. Show Matplotlib charts (saved in <code>static/charts/</code>), Impact Score priority sorting, Anonymous student masking (<code>Anonymous Student, Room 204</code>), and click <strong>"Resolve..."</strong> to log technician remarks.
+          </p>
+          <a href="{{ url_for('admin_dashboard') }}" target="_blank" class="btn btn-secondary btn-sm">Launch Admin Dashboard &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showSlide(sectionId, btn) {
+  document.querySelectorAll('.slide-section').forEach(sec => sec.style.display = 'none');
+  document.querySelectorAll('.slide-tab').forEach(b => b.classList.remove('active'));
+  const target = document.getElementById(sectionId);
+  if (target) {
+    target.style.display = 'block';
+    target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  if (btn) btn.classList.add('active');
+}
+</script>
+{% endblock %}

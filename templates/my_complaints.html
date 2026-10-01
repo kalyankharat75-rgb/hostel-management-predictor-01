@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}My Complaints - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">My Filed Complaints</h1>
+    <p class="section-desc">Track status updates and technician resolution logs for issues you reported</p>
+  </div>
+  <div>
+    <a href="{{ url_for('file_complaint') }}" class="btn btn-primary btn-sm">+ File New Complaint</a>
+  </div>
+</div>
+
+<div class="panel-card">
+  {% if complaints %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Room & Asset</th>
+            <th>Issue Type</th>
+            <th>Description</th>
+            <th>Date Filed</th>
+            <th>Impact</th>
+            <th>Status</th>
+            <th>Resolution Info</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in complaints %}
+          <tr>
+            <td><strong>#{{ c.id }}</strong></td>
+            <td>
+              <strong>Room {{ c.room_no }}</strong> (Floor {{ c.floor }})<br>
+              <span class="badge-normal">{{ c.asset_code }} - {{ c.asset_type }}</span>
+            </td>
+            <td><strong>{{ c.issue_type }}</strong></td>
+            <td style="max-width: 250px;">
+              <div style="font-size: 0.88rem; color: #334155;">{{ c.description }}</div>
+            </td>
+            <td>
+              <span style="font-size: 0.85rem; color: var(--text-muted);">{{ c.date_filed }}</span>
+            </td>
+            <td>
+              <span class="badge-normal" title="Affected students">👥 {{ c.affected_students_count }}</span>
+            </td>
+            <td>
+              {% if c.status == 'Pending' %}
+                <span class="status-badge status-pending">● Pending</span>
+              {% elif c.status == 'In Progress' %}
+                <span class="status-badge status-inprogress">● In Progress</span>
+              {% else %}
+                <span class="status-badge status-resolved">✓ Resolved</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if c.status == 'Resolved' %}
+                <div style="font-size: 0.82rem;">
+                  <strong style="color: var(--success);">Resolved</strong> by <em>{{ c.resolved_by or 'Staff' }}</em><br>
+                  <span style="color: var(--text-muted);">{{ c.resolved_date }}</span><br>
+                  <span style="color: #475569;">"{{ c.remarks }}"</span>
+                </div>
+              {% elif c.status == 'In Progress' %}
+                <span style="font-size: 0.82rem; color: #b45309;">Assigned to maintenance technician. Inspection underway.</span>
+              {% else %}
+                <span style="font-size: 0.82rem; color: var(--text-muted);">Waiting in repair queue.</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 3rem 1rem;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎉</div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">No Complaints Filed</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">You haven't reported any maintenance issues yet.</p>
+      <a href="{{ url_for('file_complaint') }}" class="btn btn-primary">File a Maintenance Request</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

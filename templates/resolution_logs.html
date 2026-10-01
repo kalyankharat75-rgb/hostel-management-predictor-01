@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Resolution Logs - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">Maintenance Resolution Audit Logs</h1>
+    <p class="section-desc">Permanent service history, technician remarks, and completed repair records</p>
+  </div>
+  <div>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="panel-card">
+  {% if logs %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Log #</th>
+            <th>Resolved Date</th>
+            <th>Location & Asset</th>
+            <th>Original Problem</th>
+            <th>Technician / Serviced By</th>
+            <th>Resolution Remarks</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td><strong>#{{ log.log_id }}</strong></td>
+            <td>
+              <span style="font-size: 0.85rem; color: #047857; font-weight: 600;">
+                {{ log.resolved_date }}
+              </span>
+            </td>
+            <td>
+              <strong>Room {{ log.room_no }}</strong> (Floor {{ log.floor }})<br>
+              <span class="badge-normal">{{ log.asset_code }} - {{ log.asset_type }}</span>
+            </td>
+            <td style="max-width: 200px;">
+              <strong>{{ log.issue_type }}</strong><br>
+              <span style="font-size: 0.82rem; color: var(--text-muted);">{{ log.description }}</span>
+            </td>
+            <td>
+              <strong style="color: #1e293b;">{{ log.resolved_by }}</strong>
+            </td>
+            <td style="max-width: 260px;">
+              <span style="color: #334155; font-size: 0.88rem;">"{{ log.remarks }}"</span>
+            </td>
+            <td>
+              <a href="{{ url_for('asset_detail', asset_id=log.asset_id) }}" class="btn btn-outline btn-sm">
+                Asset History &rarr;
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+      No resolution logs have been recorded yet.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

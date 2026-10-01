@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Asset {{ asset.asset_code }} - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <a href="{{ url_for('assets_list') }}" style="color: var(--text-muted); font-size: 0.9rem;">&larr; Back to All Assets</a>
+</div>
+
+<div class="panel-card" style="position: relative; overflow: hidden;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: #1e293b;">
+          {{ asset.asset_code }} &bull; {{ asset.asset_type }}
+        </h1>
+        {% if needs_replacement %}
+          <span class="badge-replacement" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">
+            🚨 Needs Replacement
+          </span>
+        {% else %}
+          <span class="status-badge status-resolved">Operational</span>
+        {% endif %}
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Installed in <strong>Room {{ asset.room_no }}</strong> &bull; Floor {{ asset.floor }} &bull; Asset Database ID: #{{ asset.id }}
+      </p>
+    </div>
+
+    <div style="text-align: right;">
+      <div style="font-size: 2rem; font-weight: 800; color: {% if needs_replacement %}#b91c1c{% else %}#1e293b{% endif %};">
+        {{ recent_complaints }}
+      </div>
+      <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
+        Complaints (Last 6 Months)
+      </div>
+      <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+        {{ total_complaints }} lifetime complaints
+      </div>
+    </div>
+  </div>
+
+  <!-- Highlight Box for Needs Replacement -->
+  {% if needs_replacement %}
+    <div style="margin-top: 1.5rem; padding: 1.25rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md);">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: #991b1b; margin-bottom: 0.35rem;">
+        ⚠️ Replacement Recommendation Triggered
+      </h3>
+      <p style="font-size: 0.9rem; color: #7f1d1d;">
+        <strong>{{ asset.asset_code }} in Room {{ asset.room_no }} has had {{ recent_complaints }} complaints in the last 6 months.</strong><br>
+        Standard operating procedure flags assets with 3+ recurring failures as unviable for further patching. 
+        It is strongly recommended to initiate a purchase requisition and swap this unit with a new replacement asset.
+      </p>
+    </div>
+  {% else %}
+    <div style="margin-top: 1.5rem; padding: 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md);">
+      <p style="font-size: 0.88rem; color: #166534;">
+        ✓ This asset is currently within acceptable maintenance limits ({{ recent_complaints }}/3 threshold).
+      </p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- History Table -->
+<div class="panel-card">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Incident & Service History Timeline</h2>
+      <p class="section-desc">Chronological log of all student complaints and technician resolutions for this asset</p>
+    </div>
+  </div>
+
+  {% if complaints %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ticket #</th>
+            <th>Date Reported</th>
+            <th>Issue Type</th>
+            <th>Student Description</th>
+            <th>Status</th>
+            <th>Impact</th>
+            <th>Resolution Log Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in complaints %}
+          <tr>
+            <td><strong>#{{ c.id }}</strong></td>
+            <td>{{ c.date_filed }}</td>
+            <td><span class="badge-normal" style="font-weight: 600;">{{ c.issue_type }}</span></td>
+            <td style="max-width: 250px;">
+              <span style="font-size: 0.88rem;">{{ c.description }}</span>
+            </td>
+            <td>
+              {% if c.status == 'Pending' %}
+                <span class="status-badge status-pending">Pending</span>
+              {% elif c.status == 'In Progress' %}
+                <span class="status-badge status-inprogress">In Progress</span>
+              {% else %}
+                <span class="status-badge status-resolved">Resolved</span>
+              {% endif %}
+            </td>
+            <td>👥 {{ c.affected_students_count }}</td>
+            <td>
+              {% if c.status == 'Resolved' %}
+                <div style="font-size: 0.82rem;">
+                  <span style="color: #059669; font-weight: 600;">Serviced on {{ c.resolved_date }}</span><br>
+                  <strong>Technician:</strong> {{ c.resolved_by }}<br>
+                  <strong>Action:</strong> <em>"{{ c.remarks }}"</em>
+                </div>
+              {% else %}
+                <span style="font-size: 0.82rem; color: var(--text-muted);">Awaiting completion</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+      No complaints have ever been filed for this asset.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

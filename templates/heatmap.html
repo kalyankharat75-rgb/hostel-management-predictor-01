@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Visual Heatmap - Hostel Maintenance Predictor{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">Hostel Infrastructure Heatmap</h1>
+    <p class="section-desc">Room-by-room complaint density based on incident volume logged over the last 30 days</p>
+  </div>
+  <div>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm">Admin Dashboard &rarr;</a>
+  </div>
+</div>
+
+<!-- Legend Bar -->
+<div class="panel-card" style="padding: 1rem 1.25rem; margin-bottom: 1.5rem; background: #ffffff;">
+  <div style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;">
+    <span style="font-weight: 700; color: #1e293b;">Density Legend:</span>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span style="display: inline-block; width: 18px; height: 18px; background: #d1fae5; border: 2px solid #10b981; border-radius: 4px;"></span>
+      <span style="font-size: 0.88rem; font-weight: 600; color: #065f46;">Green: Normal (0 - 1 complaints)</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span style="display: inline-block; width: 18px; height: 18px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 4px;"></span>
+      <span style="font-size: 0.88rem; font-weight: 600; color: #92400e;">Yellow: Elevated (2 - 3 complaints)</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span style="display: inline-block; width: 18px; height: 18px; background: #fee2e2; border: 2px solid #ef4444; border-radius: 4px;"></span>
+      <span style="font-size: 0.88rem; font-weight: 600; color: #991b1b;">Red: Critical Hotspot (4+ complaints)</span>
+    </div>
+  </div>
+</div>
+
+<!-- Floor-by-Floor Grid Display -->
+{% for floor_num, rooms in floors_data.items() %}
+<div class="panel-card" style="margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+    <h3 style="font-size: 1.2rem; font-weight: 700; color: #1e293b;">
+      🏢 Floor {{ floor_num }}
+    </h3>
+    <span style="font-size: 0.85rem; color: var(--text-muted);">
+      {{ rooms|length }} Rooms Monitored
+    </span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+    {% for r in rooms %}
+    <div class="heatmap-room-tile" onclick="inspectRoomFromHeatmap('{{ r.room_no }}', {{ floor_num }}, {{ r.count }}, '{{ r.label }}')" style="
+      background-color: {{ r.bg }};
+      border: 2px solid {{ r.border }};
+    ">
+      <div style="font-size: 1.25rem; font-weight: 800; color: {{ r.text_color }}; margin-bottom: 0.25rem;">
+        Room {{ r.room_no }}
+      </div>
+      <div style="font-size: 2rem; font-weight: 800; color: {{ r.text_color }}; line-height: 1.2;">
+        {{ r.count }}
+      </div>
+      <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: {{ r.text_color }}; margin-top: 0.25rem;">
+        {{ r.label }}
+      </div>
+      <div style="margin-top: 0.75rem; font-size: 0.75rem; color: {{ r.text_color }}; font-weight: 700; text-decoration: underline;">
+        Click to Quick Inspect 🔍
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+<!-- Interactive Heatmap Quick Inspect Modal -->
+<div id="heatmapRoomModal" class="modal-backdrop">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h3 id="modalRoomTitle">Room Inspection</h3>
+      <button type="button" class="modal-close" onclick="closeHeatmapModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.25rem; padding: 1rem; background: #f8fafc; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); line-height: 1;" id="modalRoomCount">0</div>
+        <div>
+          <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);" id="modalRoomLabel">Status</div>
+          <div style="font-size: 0.82rem; color: var(--text-muted);">Reported maintenance issues in last 30 days</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.6rem;">
+          Installed Room Assets:
+        </h4>
+        <div id="modalRoomAssets" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <!-- Loaded dynamically via fetch -->
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeHeatmapModal()">Close</button>
+      <a id="modalFileForRoomBtn" href="#" class="btn btn-primary btn-sm">⚡ File Issue for this Room</a>
+      <a id="modalRoomActionBtn" href="#" class="btn btn-outline btn-sm">View in Admin Dashboard &rarr;</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
